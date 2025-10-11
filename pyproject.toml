@@ -1,0 +1,24 @@
+[project]
+name = "emails-flow-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "boto3>=1.40.40",
+    "imapclient>=3.0.1",
+    "langchain>=0.3.27",
+    "langchain-aws>=0.2.33",
+    "langchain-xai>=0.2.5",
+    "pyairtable>=3.0.0",
+    "pydantic>=2.11.9",
+    "python-dotenv>=1.0.0",
+    "supabase>=2.22.0",
+]
+
+[dependency-groups]
+dev = [
+    "aws-cdk-lib>=2.219.0",
+    "black>=25.9.0",
+    "constructs>=10.4.2",
+]
