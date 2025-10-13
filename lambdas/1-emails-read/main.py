@@ -15,7 +15,7 @@ def handler(event, context):
     imap_port = int(os.getenv("IMAP_PORT"))
     imap_user = os.getenv("IMAP_USER")
     imap_password = os.getenv("IMAP_PASSWORD")
-    queue_url = os.getenv("SQS_QUEUE_URL")
+    email_read_queue_url = os.getenv("EMAIL_READ_QUEUE_URL")
 
     email_server = EmailService(imap_host, imap_port, imap_user, imap_password)
     message_ids = email_server.fetch_unseen_mails(
@@ -24,7 +24,7 @@ def handler(event, context):
 
     for msg_id in message_ids:
         send_message(
-            queue_url,
+            email_read_queue_url,
             {
                 "message_id": msg_id,
                 "folder": folder,
