@@ -3,7 +3,9 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
     aws_sqs as sqs,
+    aws_secretsmanager as secretsmanager,
     aws_lambda_event_sources as lambda_event_sources,
+    aws_logs as logs,
     Duration,
 )
 from constructs import Construct
@@ -21,9 +23,19 @@ class EmailStoreLambda(Construct):
         construct_id: str,
         layer: _lambda.LayerVersion,
         email_read_queue: sqs.Queue,
+        imap_credentials_secret: secretsmanager.Secret,
+        supabase_credentials_secret: secretsmanager.Secret,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Create CloudWatch Log Group with retention
+        log_group = logs.LogGroup(
+            self,
+            "LogGroup",
+            log_group_name=f"/aws/lambda/emails-flow-email-store",
+            retention=logs.RetentionDays.ONE_MONTH,
+        )
 
         self.email_store_role = iam.Role(
             self,
@@ -37,6 +49,10 @@ class EmailStoreLambda(Construct):
             ],
         )
 
+        # Grant permission to read credentials from Secrets Manager
+        imap_credentials_secret.grant_read(self.email_store_role)
+        supabase_credentials_secret.grant_read(self.email_store_role)
+
         self.function = _lambda.Function(
             self,
             "Function",
@@ -46,15 +62,13 @@ class EmailStoreLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/2-email-store"),
             role=self.email_store_role,
             timeout=Duration.seconds(20),
+            reserved_concurrent_executions=10,  # Rate limiting
             environment={
-                "IMAP_HOST": os.getenv("IMAP_HOST"),
-                "IMAP_PORT": os.getenv("IMAP_PORT"),
-                "IMAP_USER": os.getenv("IMAP_USER"),
-                "IMAP_PASSWORD": os.getenv("IMAP_PASSWORD"),
-                "SUPABASE_URL": os.getenv("SUPABASE_URL"),
-                "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
+                "IMAP_CREDENTIALS_SECRET_ARN": imap_credentials_secret.secret_arn,
+                "SUPABASE_CREDENTIALS_SECRET_ARN": supabase_credentials_secret.secret_arn,
             },
             layers=[layer],
+            log_group=log_group,
         )
 
         # Subscribe to queue
@@ -68,3 +82,7 @@ class EmailStoreLambda(Construct):
 
         # Grant permission to consume messages
         email_read_queue.grant_consume_messages(self.function)
+        
+        # Grant permission to use the queue's KMS key
+        if hasattr(email_read_queue, 'encryption_master_key'):
+            email_read_queue.encryption_master_key.grant_encrypt_decrypt(self.email_store_role)

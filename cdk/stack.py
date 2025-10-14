@@ -1,5 +1,6 @@
 from aws_cdk import (
     aws_lambda as _lambda,
+    aws_secretsmanager as secretsmanager,
     App,
     Stack,
     Tags,
@@ -7,7 +8,7 @@ from aws_cdk import (
 )
 
 # Import our organized modules
-from queues import EmailReadQueue, EmailReadDeadQueue, EmailAnalyzeQueue, EmailAnalyzeDeadQueue, PostStoreQueue
+from queues import EmailReadQueue, EmailReadDeadQueue, EmailAnalyzeQueue, EmailAnalyzeDeadQueue, PostStoreQueue, PostStoreDeadQueue
 from lambdas import (
     EmailsReadLambda,
     EmailStoreLambda,
@@ -39,7 +40,45 @@ class PythonLambdaStack(Stack):
         Tags.of(self).add("env", "test")
 
         # ========================================
-        # 1. SHARED RESOURCES
+        # 1. SECRETS MANAGEMENT
+        # ========================================
+
+        # Create secrets for sensitive credentials
+        imap_credentials_secret = secretsmanager.Secret(
+            self,
+            "ImapCredentials",
+            description="IMAP server credentials for email processing",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template='{"host":"","port":"","user":""}',
+                generate_string_key="password",
+                exclude_characters=" %+~`#$&*()|[]{}:;<>?!'/\"\\",
+            ),
+        )
+
+        supabase_credentials_secret = secretsmanager.Secret(
+            self,
+            "SupabaseCredentials",
+            description="Supabase database credentials",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template='{"url":""}',
+                generate_string_key="key",
+                exclude_characters=" %+~`#$&*()|[]{}:;<>?!'/\"\\",
+            ),
+        )
+
+        xai_credentials_secret = secretsmanager.Secret(
+            self,
+            "XaiCredentials",
+            description="XAI API credentials for AI processing",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template='{}',
+                generate_string_key="api_key",
+                exclude_characters=" %+~`#$&*()|[]{}:;<>?!'/\"\\",
+            ),
+        )
+
+        # ========================================
+        # 2. SHARED RESOURCES
         # ========================================
 
         # Lambda Layer with shared code
@@ -52,7 +91,7 @@ class PythonLambdaStack(Stack):
         )
 
         # ========================================
-        # 2. QUEUES
+        # 3. QUEUES
         # ========================================
 
         # Queue for email IDs
@@ -72,10 +111,15 @@ class PythonLambdaStack(Stack):
         )
 
         # Queue for post-storage processing
-        post_store_queue = PostStoreQueue(self, "PostStoreQueue")
+        post_store_dead_queue = PostStoreDeadQueue(
+            self, "PostStoreDeadQueue"
+        )
+        post_store_queue = PostStoreQueue(
+            self, "PostStoreQueue", dead_letter_queue=post_store_dead_queue.queue
+        )
 
         # ========================================
-        # 3. LAMBDAS
+        # 4. LAMBDAS
         # ========================================
 
         # PRODUCER: Fetch email IDs from IMAP → email_read_queue
@@ -84,6 +128,7 @@ class PythonLambdaStack(Stack):
             "EmailsReadLambda",
             layer=shared_layer,
             email_read_queue=email_read_queue.queue,
+            imap_credentials_secret=imap_credentials_secret,
         )
 
         # CONSUMER: email_read_queue → Store emails in Supabase
@@ -92,6 +137,8 @@ class PythonLambdaStack(Stack):
             "EmailStoreLambda",
             layer=shared_layer,
             email_read_queue=email_read_queue.queue,
+            imap_credentials_secret=imap_credentials_secret,
+            supabase_credentials_secret=supabase_credentials_secret,
         )
 
         # PRODUCER: Query Supabase → email_analyze_queue
@@ -100,6 +147,7 @@ class PythonLambdaStack(Stack):
             "EmailsAnalyzeLambda",
             layer=shared_layer,
             email_analyze_queue=email_analyze_queue.queue,
+            supabase_credentials_secret=supabase_credentials_secret,
         )
 
         # CONSUMER: email_analyze_queue → Analyze → post_store_queue
@@ -109,6 +157,8 @@ class PythonLambdaStack(Stack):
             layer=shared_layer,
             email_analyze_queue=email_analyze_queue.queue,
             post_store_queue=post_store_queue.queue,
+            supabase_credentials_secret=supabase_credentials_secret,
+            xai_credentials_secret=xai_credentials_secret,
         )
 
         # ========================================
