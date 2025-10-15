@@ -3,7 +3,6 @@ from aws_cdk import (
     aws_lambda as _lambda, 
     aws_iam as iam, 
     aws_sqs as sqs, 
-    aws_secretsmanager as secretsmanager,
     aws_logs as logs,
     Duration
 )
@@ -23,7 +22,6 @@ class EmailsReadLambda(Construct):
         construct_id: str,
         layer: _lambda.LayerVersion,
         email_read_queue: sqs.Queue,
-        imap_credentials_secret: secretsmanager.Secret,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -48,9 +46,6 @@ class EmailsReadLambda(Construct):
             ],
         )
 
-        # Grant permission to read IMAP credentials from Secrets Manager
-        imap_credentials_secret.grant_read(self.emails_read_role)
-
         self.function = _lambda.Function(
             self,
             "Function",
@@ -63,7 +58,10 @@ class EmailsReadLambda(Construct):
             reserved_concurrent_executions=5,  # Rate limiting
             environment={
                 "EMAIL_READ_QUEUE_URL": email_read_queue.queue_url,
-                "IMAP_CREDENTIALS_SECRET_ARN": imap_credentials_secret.secret_arn,
+                "IMAP_HOST": os.getenv("IMAP_HOST"),
+                "IMAP_PORT": os.getenv("IMAP_PORT"),
+                "IMAP_USER": os.getenv("IMAP_USER"),
+                "IMAP_PASSWORD": os.getenv("IMAP_PASSWORD"),
             },
             layers=[layer],
             log_group=log_group,
@@ -71,7 +69,3 @@ class EmailsReadLambda(Construct):
 
         # Grant permission to send messages to queue
         email_read_queue.grant_send_messages(self.emails_read_role)
-        
-        # Grant permission to use the queue's KMS key
-        if hasattr(email_read_queue, 'encryption_master_key'):
-            email_read_queue.encryption_master_key.grant_encrypt_decrypt(self.emails_read_role)

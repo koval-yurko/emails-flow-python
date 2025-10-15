@@ -3,7 +3,6 @@ from aws_cdk import (
     aws_lambda as _lambda, 
     aws_iam as iam, 
     aws_sqs as sqs, 
-    aws_secretsmanager as secretsmanager,
     aws_logs as logs,
     Duration
 )
@@ -23,7 +22,6 @@ class EmailsAnalyzeLambda(Construct):
         construct_id: str,
         layer: _lambda.LayerVersion,
         email_analyze_queue: sqs.Queue,
-        supabase_credentials_secret: secretsmanager.Secret,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -49,9 +47,6 @@ class EmailsAnalyzeLambda(Construct):
             ],
         )
 
-        # Grant permission to read Supabase credentials from Secrets Manager
-        supabase_credentials_secret.grant_read(self.emails_analyze_role)
-
         self.function = _lambda.Function(
             self,
             "Function",
@@ -64,7 +59,8 @@ class EmailsAnalyzeLambda(Construct):
             reserved_concurrent_executions=5,  # Rate limiting
             environment={
                 "EMAIL_ANALYZE_QUEUE_URL": email_analyze_queue.queue_url,
-                "SUPABASE_CREDENTIALS_SECRET_ARN": supabase_credentials_secret.secret_arn,
+                "SUPABASE_URL": os.getenv("SUPABASE_URL"),
+                "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
             layers=[layer],
             log_group=log_group,
@@ -72,7 +68,3 @@ class EmailsAnalyzeLambda(Construct):
 
         # Grant permission to send messages to queue
         email_analyze_queue.grant_send_messages(self.emails_analyze_role)
-        
-        # Grant permission to use the queue's KMS key
-        if hasattr(email_analyze_queue, 'encryption_master_key'):
-            email_analyze_queue.encryption_master_key.grant_encrypt_decrypt(self.emails_analyze_role)
