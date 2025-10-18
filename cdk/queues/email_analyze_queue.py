@@ -23,7 +23,7 @@ class EmailAnalyzeQueue(Construct):
             self,
             "Queue",
             queue_name="email-analyze-queue",
-            visibility_timeout=Duration.seconds(60),
+            visibility_timeout=Duration.seconds(180),
             retention_period=Duration.days(5),
             dead_letter_queue=sqs.DeadLetterQueue(
                 max_receive_count=1,  # Retry 1 time

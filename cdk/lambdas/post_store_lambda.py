@@ -45,7 +45,7 @@ class PostStoreLambda(Construct):
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/5-post-store"),
             role=self.email_analyze_role,
-            timeout=Duration.seconds(180),
+            timeout=Duration.seconds(60),
             memory_size=1024,
             environment={
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
