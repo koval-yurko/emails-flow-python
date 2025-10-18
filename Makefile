@@ -13,6 +13,9 @@ build_layer:
 cdk_deploy: build_layer
 	cd cdk && AWS_REGION=eu-central-1 cdk deploy
 
+cdk_destroy: build_layer
+	cd cdk && AWS_REGION=eu-central-1 cdk destroy
+
 clean:
 	rm -rf dist
 

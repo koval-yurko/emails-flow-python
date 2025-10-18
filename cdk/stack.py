@@ -24,7 +24,7 @@ from lambdas import (
 )
 
 
-class PythonLambdaStack(Stack):
+class EmailsFlowStack(Stack):
     """
     EMAIL PROCESSING PIPELINE:
 
@@ -124,7 +124,7 @@ class PythonLambdaStack(Stack):
         # CONSUMER: email_analyze_queue → Analyze → post_store_queue
         post_store = PostStoreLambda(
             self,
-            "EmailAnalyzeLambda",
+            "PostStoreLambda",
             layer=shared_layer,
             post_store_queue=post_store_queue.queue,
         )
