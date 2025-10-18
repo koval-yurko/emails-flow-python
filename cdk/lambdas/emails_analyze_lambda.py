@@ -31,7 +31,7 @@ class EmailsAnalyzeLambda(Construct):
             self,
             "LogGroup",
             log_group_name=f"/aws/lambda/emails-flow-emails-analyze",
-            retention=logs.RetentionDays.ONE_MONTH,
+            retention=logs.RetentionDays.TWO_WEEKS,
         )
 
         # Role for emails-analyze Lambda (PRODUCER)

@@ -31,7 +31,7 @@ class EmailStoreLambda(Construct):
             self,
             "LogGroup",
             log_group_name=f"/aws/lambda/emails-flow-email-store",
-            retention=logs.RetentionDays.ONE_MONTH,
+            retention=logs.RetentionDays.TWO_WEEKS,
         )
 
         self.email_store_role = iam.Role(

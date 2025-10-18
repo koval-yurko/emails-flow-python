@@ -31,7 +31,7 @@ class EmailsReadLambda(Construct):
             self,
             "LogGroup",
             log_group_name=f"/aws/lambda/emails-flow-emails-read",
-            retention=logs.RetentionDays.ONE_MONTH,
+            retention=logs.RetentionDays.TWO_WEEKS,
         )
 
         self.emails_read_role = iam.Role(
