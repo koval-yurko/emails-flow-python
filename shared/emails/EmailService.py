@@ -1,19 +1,10 @@
 from imapclient import IMAPClient
 import email
 from email.policy import default
-import os
+from shared import EmailMessage
+
 
 # https://imapclient.readthedocs.io/en/3.0.0/
-
-
-class EmailMessage:
-    def __init__(self, from_email, to_email, subject, date, message_id, body):
-        self.body = body
-        self.from_email = from_email
-        self.to_email = to_email
-        self.subject = subject
-        self.date = date
-        self.message_id = message_id
 
 
 class EmailService:

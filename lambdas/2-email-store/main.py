@@ -1,10 +1,11 @@
 import os
 import json
 from dotenv import load_dotenv
-from shared.emails import EmailService
+from shared.emails import EmailService, clean_html
 from shared.supabase import SupabaseClient
 
 load_dotenv()
+
 
 def handler(event, context):
     print(f"Received {len(event['Records'])} messages from SQS")
@@ -24,11 +25,13 @@ def handler(event, context):
         # message_id = record["messageId"]
         body = json.loads(record["body"])
 
-        message_id = body['message_id']
-        folder = body['folder']
+        message_id = body["message_id"]
+        folder = body["folder"]
 
         message = email_server.fetch_message(message_id, folder)
-        supabase_client.add_email(message)
+
+        clean_content = clean_html(message.body)
+        supabase_client.add_email(message, clean_content)
 
     return {
         "statusCode": 200,
@@ -37,14 +40,8 @@ def handler(event, context):
         ),
     }
 
+
 if __name__ == "__main__":
-    handler({
-        "Records": [
-            {
-                "body": json.dumps({
-                    "message_id": "1",
-                    "folder": "TLDR"
-                })
-            }
-        ]
-    }, {})
+    handler(
+        {"Records": [{"body": json.dumps({"message_id": "1", "folder": "TLDR"})}]}, {}
+    )

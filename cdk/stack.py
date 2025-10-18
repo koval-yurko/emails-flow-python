@@ -7,12 +7,20 @@ from aws_cdk import (
 )
 
 # Import our organized modules
-from queues import EmailReadQueue, EmailReadDeadQueue, EmailAnalyzeQueue, EmailAnalyzeDeadQueue, PostStoreQueue
+from queues import (
+    EmailReadQueue,
+    EmailReadDeadQueue,
+    EmailAnalyzeQueue,
+    EmailAnalyzeDeadQueue,
+    PostStoreQueue,
+    PostStoreDeadQueue,
+)
 from lambdas import (
     EmailsReadLambda,
     EmailStoreLambda,
-    EmailAnalyzeLambda,
     EmailsAnalyzeLambda,
+    EmailAnalyzeLambda,
+    PostStoreLambda,
 )
 
 
@@ -56,23 +64,25 @@ class PythonLambdaStack(Stack):
         # ========================================
 
         # Queue for email IDs
-        email_read_dead_queue = EmailReadDeadQueue(
-            self, "EmailReadDeadQueue"
-        )
+        email_read_dead_queue = EmailReadDeadQueue(self, "EmailReadDeadQueue")
         email_read_queue = EmailReadQueue(
             self, "EmailReadQueue", dead_letter_queue=email_read_dead_queue.queue
         )
 
         # Queue for email analysis
         email_analyze_dead_queue = EmailAnalyzeDeadQueue(
-            self, "EmailAnalyzeDeadQueue",
+            self,
+            "EmailAnalyzeDeadQueue",
         )
         email_analyze_queue = EmailAnalyzeQueue(
             self, "EmailAnalyzeQueue", dead_letter_queue=email_analyze_dead_queue.queue
         )
 
         # Queue for post-storage processing
-        post_store_queue = PostStoreQueue(self, "PostStoreQueue")
+        post_store_dead_queue = PostStoreDeadQueue(self, "PostStoreDeadQueue")
+        post_store_queue = PostStoreQueue(
+            self, "PostStoreQueue", dead_letter_queue=post_store_dead_queue.queue
+        )
 
         # ========================================
         # 3. LAMBDAS
@@ -111,6 +121,14 @@ class PythonLambdaStack(Stack):
             post_store_queue=post_store_queue.queue,
         )
 
+        # CONSUMER: email_analyze_queue → Analyze → post_store_queue
+        post_store = PostStoreLambda(
+            self,
+            "EmailAnalyzeLambda",
+            layer=shared_layer,
+            post_store_queue=post_store_queue.queue,
+        )
+
         # ========================================
         # 4. OUTPUTS
         # ========================================
@@ -141,6 +159,13 @@ class PythonLambdaStack(Stack):
             "EmailsAnalyzeLambdaArn",
             value=emails_analyze.function.function_arn,
             export_name="EmailsFlowEmailsAnalyzeLambdaArn",
+        )
+
+        CfnOutput(
+            self,
+            "PostStoreLambdaArn",
+            value=post_store.function.function_arn,
+            export_name="EmailsFlowPostStoreLambdaArn",
         )
 
         CfnOutput(

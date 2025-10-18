@@ -23,13 +23,13 @@ class EmailAnalyzeLambda(Construct):
         layer: _lambda.LayerVersion,
         email_analyze_queue: sqs.Queue,
         post_store_queue: sqs.Queue,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         self.email_analyze_role = iam.Role(
             self,
-            "EmailAnalyzeRole",
+            "Role",
             role_name="emails-flow-email-analyze-lambda-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
@@ -46,7 +46,7 @@ class EmailAnalyzeLambda(Construct):
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/4-email-analyze"),
-            role=self.email_analyze_role ,
+            role=self.email_analyze_role,
             timeout=Duration.seconds(180),
             memory_size=1024,
             environment={
@@ -68,4 +68,4 @@ class EmailAnalyzeLambda(Construct):
 
         # Grant permissions
         email_analyze_queue.grant_consume_messages(self.function)
-        post_store_queue.grant_send_messages(self.email_analyze_role )
+        post_store_queue.grant_send_messages(self.email_analyze_role)

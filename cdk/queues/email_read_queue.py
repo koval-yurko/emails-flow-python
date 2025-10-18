@@ -11,7 +11,11 @@ class EmailReadQueue(Construct):
     """
 
     def __init__(
-        self, scope: Construct, construct_id: str, dead_letter_queue: sqs.Queue, **kwargs
+        self,
+        scope: Construct,
+        construct_id: str,
+        dead_letter_queue: sqs.Queue,
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 

@@ -16,13 +16,13 @@ class EmailsReadLambda(Construct):
         construct_id: str,
         layer: _lambda.LayerVersion,
         email_read_queue: sqs.Queue,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         self.emails_read_role = iam.Role(
             self,
-            "EmailsReadRole",
+            "Role",
             role_name="emails-flow-emails-read-lambda-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[

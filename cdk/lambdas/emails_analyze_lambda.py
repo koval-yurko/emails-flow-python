@@ -16,14 +16,14 @@ class EmailsAnalyzeLambda(Construct):
         construct_id: str,
         layer: _lambda.LayerVersion,
         email_analyze_queue: sqs.Queue,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Role for emails-analyze Lambda (PRODUCER)
         self.emails_analyze_role = iam.Role(
             self,
-            "EmailsAnalyzeRole",
+            "Role",
             role_name="emails-flow-emails-analyze-lambda-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[

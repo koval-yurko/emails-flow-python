@@ -8,6 +8,7 @@ from shared.sqs import send_message
 
 load_dotenv()
 
+
 def handler(event, context):
     print(f"Received {len(event['Records'])} messages from SQS")
 
@@ -22,14 +23,13 @@ def handler(event, context):
     for record in event["Records"]:
         # message_id = record["messageId"]
         body = json.loads(record["body"])
-        row_id = body['row_id']
+        row_id = body["row_id"]
 
         email = supabase_client.get_email_by_id(row_id)
 
-        content = email['content']
-        clean_content = clean_html(content)
+        content = email["clean_content"]
 
-        posts = llm.get_email_summary(clean_content)
+        posts = llm.get_email_summary(content)
 
         # send results to post-store
         for post in posts:
@@ -37,15 +37,13 @@ def handler(event, context):
                 post_store_queue_url,
                 {
                     "email_id": row_id,
-                    "clean_content": clean_content,
                     "title": post.title,
-                    "text": post.text,
-                    "post_name": post.postName,
                     "url": post.url,
+                    "text": post.text,
                     "domains": post.domains,
                     "categories": post.categories,
                     "tags": post.tags,
-                    "new_tags": post.newTags
+                    "new_tags": post.newTags,
                 },
             )
 
@@ -60,12 +58,17 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    handler({
-        "Records": [
-            {
-                "body": json.dumps({
-                    "row_id": "027e3b3b-db82-4db4-9f0b-de733198b25c",
-                })
-            }
-        ]
-    }, {})
+    handler(
+        {
+            "Records": [
+                {
+                    "body": json.dumps(
+                        {
+                            "row_id": "027e3b3b-db82-4db4-9f0b-de733198b25c",
+                        }
+                    )
+                }
+            ]
+        },
+        {},
+    )

@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 
 
 class PostItem(BaseModel):
-    postName: str = Field(description="The name of the post")
     url: str = Field(description="The url of the post")
     title: str = Field(description="The title of the post")
     text: str = Field(description="A text of the post")

@@ -11,7 +11,7 @@ class EmailAnalyzeDeadQueue(Construct):
         # DLQ for email-analyze pipeline
         self.queue = sqs.Queue(
             self,
-            "EmailAnalyzeDLQ",
+            "Queue",
             queue_name="email-analyze-dead-queue",
             retention_period=Duration.days(10),
         )
