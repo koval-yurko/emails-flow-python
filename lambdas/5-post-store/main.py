@@ -15,29 +15,34 @@ def handler(event, context):
 
     supabase_client = SupabaseClient(supabase_url, supabase_key)
 
+    batch_item_failures = []
+
     for record in event["Records"]:
-        # message_id = record["messageId"]
-        body = json.loads(record["body"])
+        sqs_message_id = record["messageId"]
 
-        post = PostMessage(
-            email_id=body["email_id"],
-            url=body["url"],
-            title=body["title"],
-            text=body["text"],
-            domains=body.get("domains", []),
-            categories=body.get("categories", []),
-            tags=body.get("tags", []),
-            new_tags=body.get("new_tags", []),
-        )
+        try:
+            body = json.loads(record["body"])
 
-        post_id = supabase_client.add_post(post)
+            post = PostMessage(
+                email_id=body["email_id"],
+                url=body["url"],
+                title=body["title"],
+                text=body["text"],
+                domains=body.get("domains", []),
+                categories=body.get("categories", []),
+                tags=body.get("tags", []),
+                new_tags=body.get("new_tags", []),
+            )
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": f'Successfully processed {len(event["Records"])} messages'}
-        ),
-    }
+            post_id = supabase_client.add_post(post)
+            # Push Success metrics
+
+        except Exception as e:
+            print(f"Error processing message {sqs_message_id}: {str(e)}")
+            batch_item_failures.append({"itemIdentifier": sqs_message_id})
+            # Push Error metrics
+
+    return {"batchItemFailures": batch_item_failures}
 
 
 if __name__ == "__main__":
@@ -45,6 +50,7 @@ if __name__ == "__main__":
         {
             "Records": [
                 {
+                    "messageId": "test-sqs-msg-1",
                     "body": json.dumps(
                         {
                             "email_id": "f2807cbc-e7b8-43d6-b2ba-c36a0c9e6d51",
@@ -59,6 +65,7 @@ if __name__ == "__main__":
                     )
                 },
                 {
+                    "messageId": "test-sqs-msg-2",
                     "body": json.dumps(
                         {
                             "email_id": "729819c9-b1b4-4ef9-9194-d054105a38cf",

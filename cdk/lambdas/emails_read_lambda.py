@@ -54,6 +54,7 @@ class EmailsReadLambda(Construct):
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/1-emails-read"),
             role=self.emails_read_role,
+            memory_size=256,
             timeout=Duration.seconds(20),
             reserved_concurrent_executions=5,  # Rate limiting
             environment={

@@ -55,7 +55,8 @@ class PostStoreLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/5-post-store"),
             role=self.post_store_role,
             timeout=Duration.seconds(60),
-            memory_size=1024,
+            memory_size=256,
+            reserved_concurrent_executions=10,
             environment={
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
@@ -69,6 +70,8 @@ class PostStoreLambda(Construct):
             lambda_event_sources.SqsEventSource(
                 post_store_queue,
                 batch_size=10,
+                max_batching_window=Duration.seconds(5),
+                report_batch_item_failures=True,
             )
         )
 

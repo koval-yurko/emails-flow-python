@@ -55,6 +55,7 @@ class EmailStoreLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/2-email-store"),
             role=self.email_store_role,
             timeout=Duration.seconds(20),
+            memory_size=512,
             reserved_concurrent_executions=10,  # Rate limiting
             environment={
                 "IMAP_HOST": os.getenv("IMAP_HOST"),
@@ -74,6 +75,7 @@ class EmailStoreLambda(Construct):
                 email_read_queue,
                 batch_size=10,
                 max_batching_window=Duration.seconds(5),
+                report_batch_item_failures=True,
             )
         )
 

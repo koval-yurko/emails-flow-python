@@ -56,6 +56,7 @@ class EmailsAnalyzeLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/3-emails-analyze"),
             role=self.emails_analyze_role,
             timeout=Duration.seconds(60),
+            memory_size=256,
             reserved_concurrent_executions=5,  # Rate limiting
             environment={
                 "EMAIL_ANALYZE_QUEUE_URL": email_analyze_queue.queue_url,

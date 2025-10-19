@@ -21,27 +21,40 @@ def handler(event, context):
 
     supabase_client = SupabaseClient(supabase_url, supabase_key)
 
+    batch_item_failures = []
+
     for record in event["Records"]:
-        # message_id = record["messageId"]
-        body = json.loads(record["body"])
+        sqs_message_id = record["messageId"]
 
-        message_id = body["message_id"]
-        folder = body["folder"]
+        try:
+            body = json.loads(record["body"])
 
-        message = email_server.fetch_message(message_id, folder)
+            message_id = body["message_id"]
+            folder = body["folder"]
 
-        clean_content = clean_html(message.body)
-        supabase_client.add_email(message, clean_content)
+            message = email_server.fetch_message(message_id, folder)
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": f'Successfully processed {len(event["Records"])} messages'}
-        ),
-    }
+            clean_content = clean_html(message.body)
+            supabase_client.add_email(message, clean_content)
+            # Push Success metrics
+
+        except Exception as e:
+            print(f"Error processing message {sqs_message_id}: {str(e)}")
+            batch_item_failures.append({"itemIdentifier": sqs_message_id})
+            # Push Error metrics
+
+    return {"batchItemFailures": batch_item_failures}
 
 
 if __name__ == "__main__":
     handler(
-        {"Records": [{"body": json.dumps({"message_id": "1", "folder": "TLDR"})}]}, {}
+        {
+            "Records": [
+                {
+                    "messageId": "test-sqs-msg-1",
+                    "body": json.dumps({"message_id": "1", "folder": "TLDR"}),
+                }
+            ]
+        },
+        {},
     )

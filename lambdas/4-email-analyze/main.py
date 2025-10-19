@@ -20,41 +20,46 @@ def handler(event, context):
 
     llm = LLMEngine()
 
+    batch_item_failures = []
+
     for record in event["Records"]:
-        # message_id = record["messageId"]
-        body = json.loads(record["body"])
-        row_id = body["row_id"]
+        sqs_message_id = record["messageId"]
 
-        email = supabase_client.get_email_by_id(row_id)
+        try:
+            body = json.loads(record["body"])
+            row_id = body["row_id"]
 
-        content = email["clean_content"]
+            email = supabase_client.get_email_by_id(row_id)
 
-        posts = llm.get_email_summary(content)
+            content = email["clean_content"]
 
-        # send results to post-store
-        for post in posts:
-            send_message(
-                post_store_queue_url,
-                {
-                    "email_id": row_id,
-                    "title": post.title,
-                    "url": post.url,
-                    "text": post.text,
-                    "domains": post.domains,
-                    "categories": post.categories,
-                    "tags": post.tags,
-                    "new_tags": post.newTags,
-                },
-            )
+            posts = llm.get_email_summary(content)
 
-        supabase_client.mark_email_as_processed(row_id)
+            # send results to post-store
+            for post in posts:
+                send_message(
+                    post_store_queue_url,
+                    {
+                        "email_id": row_id,
+                        "title": post.title,
+                        "url": post.url,
+                        "text": post.text,
+                        "domains": post.domains,
+                        "categories": post.categories,
+                        "tags": post.tags,
+                        "new_tags": post.newTags,
+                    },
+                )
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": f'Successfully processed {len(event["Records"])} messages'}
-        ),
-    }
+            supabase_client.mark_email_as_processed(row_id)
+            # Push Success metrics
+
+        except Exception as e:
+            print(f"Error processing message {sqs_message_id}: {str(e)}")
+            batch_item_failures.append({"itemIdentifier": sqs_message_id})
+            # Push Error metrics
+
+    return {"batchItemFailures": batch_item_failures}
 
 
 if __name__ == "__main__":
@@ -62,11 +67,12 @@ if __name__ == "__main__":
         {
             "Records": [
                 {
+                    "messageId": "test-sqs-msg-1",
                     "body": json.dumps(
                         {
                             "row_id": "027e3b3b-db82-4db4-9f0b-de733198b25c",
                         }
-                    )
+                    ),
                 }
             ]
         },

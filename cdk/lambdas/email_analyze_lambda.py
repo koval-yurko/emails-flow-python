@@ -74,6 +74,7 @@ class EmailAnalyzeLambda(Construct):
             lambda_event_sources.SqsEventSource(
                 email_analyze_queue,
                 batch_size=1,
+                report_batch_item_failures=True,
             )
         )
 
