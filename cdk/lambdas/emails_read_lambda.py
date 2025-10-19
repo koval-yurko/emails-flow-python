@@ -1,5 +1,11 @@
 import os
-from aws_cdk import aws_lambda as _lambda, aws_iam as iam, aws_sqs as sqs, Duration
+from aws_cdk import (
+    aws_lambda as _lambda,
+    aws_iam as iam,
+    aws_sqs as sqs,
+    aws_logs as logs,
+    Duration,
+)
 from constructs import Construct
 
 
@@ -19,6 +25,14 @@ class EmailsReadLambda(Construct):
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Create CloudWatch Log Group with retention
+        log_group = logs.LogGroup(
+            self,
+            "LogGroup",
+            log_group_name=f"/aws/lambda/emails-flow-emails-read",
+            retention=logs.RetentionDays.TWO_WEEKS,
+        )
 
         self.emails_read_role = iam.Role(
             self,
@@ -41,6 +55,7 @@ class EmailsReadLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/1-emails-read"),
             role=self.emails_read_role,
             timeout=Duration.seconds(20),
+            reserved_concurrent_executions=5,  # Rate limiting
             environment={
                 "EMAIL_READ_QUEUE_URL": email_read_queue.queue_url,
                 "IMAP_HOST": os.getenv("IMAP_HOST"),
@@ -49,6 +64,7 @@ class EmailsReadLambda(Construct):
                 "IMAP_PASSWORD": os.getenv("IMAP_PASSWORD"),
             },
             layers=[layer],
+            log_group=log_group,
         )
 
         # Grant permission to send messages to queue

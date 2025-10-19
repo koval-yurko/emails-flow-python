@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_sqs as sqs,
     aws_lambda_event_sources as lambda_event_sources,
+    aws_logs as logs,
     Duration,
 )
 from constructs import Construct
@@ -27,6 +28,14 @@ class EmailAnalyzeLambda(Construct):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        # Create CloudWatch Log Group with retention
+        log_group = logs.LogGroup(
+            self,
+            "LogGroup",
+            log_group_name=f"/aws/lambda/emails-flow-email-analyze",
+            retention=logs.RetentionDays.TWO_WEEKS,
+        )
+
         self.email_analyze_role = iam.Role(
             self,
             "Role",
@@ -49,6 +58,7 @@ class EmailAnalyzeLambda(Construct):
             role=self.email_analyze_role,
             timeout=Duration.seconds(180),
             memory_size=1024,
+            reserved_concurrent_executions=3,  # Rate limiting
             environment={
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
@@ -56,6 +66,7 @@ class EmailAnalyzeLambda(Construct):
                 "POST_STORE_QUEUE_URL": post_store_queue.queue_url,
             },
             layers=[layer],
+            log_group=log_group,
         )
 
         # Subscribe to queue

@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_sqs as sqs,
     aws_lambda_event_sources as lambda_event_sources,
+    aws_logs as logs,
     Duration,
 )
 from constructs import Construct
@@ -24,6 +25,14 @@ class EmailStoreLambda(Construct):
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Create CloudWatch Log Group with retention
+        log_group = logs.LogGroup(
+            self,
+            "LogGroup",
+            log_group_name=f"/aws/lambda/emails-flow-email-store",
+            retention=logs.RetentionDays.TWO_WEEKS,
+        )
 
         self.email_store_role = iam.Role(
             self,
@@ -46,6 +55,7 @@ class EmailStoreLambda(Construct):
             code=_lambda.Code.from_asset("../lambdas/2-email-store"),
             role=self.email_store_role,
             timeout=Duration.seconds(20),
+            reserved_concurrent_executions=10,  # Rate limiting
             environment={
                 "IMAP_HOST": os.getenv("IMAP_HOST"),
                 "IMAP_PORT": os.getenv("IMAP_PORT"),
@@ -55,6 +65,7 @@ class EmailStoreLambda(Construct):
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
             layers=[layer],
+            log_group=log_group,
         )
 
         # Subscribe to queue

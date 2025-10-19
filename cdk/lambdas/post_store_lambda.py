@@ -3,6 +3,7 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
     aws_sqs as sqs,
+    aws_logs as logs,
     aws_lambda_event_sources as lambda_event_sources,
     Duration,
 )
@@ -25,7 +26,15 @@ class PostStoreLambda(Construct):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.email_analyze_role = iam.Role(
+        # Create CloudWatch Log Group with retention
+        log_group = logs.LogGroup(
+            self,
+            "LogGroup",
+            log_group_name=f"/aws/lambda/emails-flow-post-store",
+            retention=logs.RetentionDays.TWO_WEEKS,
+        )
+
+        self.post_store_role = iam.Role(
             self,
             "Role",
             role_name="emails-flow-post-store-lambda-role",
@@ -44,7 +53,7 @@ class PostStoreLambda(Construct):
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/5-post-store"),
-            role=self.email_analyze_role,
+            role=self.post_store_role,
             timeout=Duration.seconds(60),
             memory_size=1024,
             environment={
@@ -52,6 +61,7 @@ class PostStoreLambda(Construct):
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
             layers=[layer],
+            log_group=log_group,
         )
 
         # Subscribe to queue
