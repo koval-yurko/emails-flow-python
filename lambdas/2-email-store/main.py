@@ -36,6 +36,8 @@ def handler(event, context):
 
             clean_content = clean_html(message.body)
             supabase_client.add_email(message, clean_content)
+
+            email_server.mark_massage_as_seen(message_id, folder)
             # Push Success metrics
 
         except Exception as e:
