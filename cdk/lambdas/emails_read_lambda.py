@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_sqs as sqs,
     aws_logs as logs,
     Duration,
+    Tags,
 )
 from constructs import Construct
 
@@ -33,6 +34,7 @@ class EmailsReadLambda(Construct):
             log_group_name=f"/aws/lambda/emails-flow-emails-read",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
+        Tags.of(log_group).add("app", "emails-read")
 
         self.emails_read_role = iam.Role(
             self,
@@ -45,6 +47,7 @@ class EmailsReadLambda(Construct):
                 )
             ],
         )
+        Tags.of(self.emails_read_role).add("app", "emails-read")
 
         self.function = _lambda.Function(
             self,
@@ -67,6 +70,7 @@ class EmailsReadLambda(Construct):
             layers=[layer],
             log_group=log_group,
         )
+        Tags.of(self.function).add("app", "emails-read")
 
         # Grant permission to send messages to queue
         email_read_queue.grant_send_messages(self.emails_read_role)

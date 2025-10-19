@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_logs as logs,
     aws_lambda_event_sources as lambda_event_sources,
     Duration,
+    Tags,
 )
 from constructs import Construct
 
@@ -33,6 +34,7 @@ class PostStoreLambda(Construct):
             log_group_name=f"/aws/lambda/emails-flow-post-store",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
+        Tags.of(log_group).add("app", "post-store")
 
         self.post_store_role = iam.Role(
             self,
@@ -45,6 +47,7 @@ class PostStoreLambda(Construct):
                 )
             ],
         )
+        Tags.of(self.post_store_role).add("app", "post-store")
 
         self.function = _lambda.Function(
             self,
@@ -64,6 +67,7 @@ class PostStoreLambda(Construct):
             layers=[layer],
             log_group=log_group,
         )
+        Tags.of(self.function).add("app", "post-store")
 
         # Subscribe to queue
         self.function.add_event_source(

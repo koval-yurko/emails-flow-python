@@ -43,7 +43,7 @@ class EmailsFlowStack(Stack):
         super().__init__(app, id, **kwargs)
 
         # Tags
-        Tags.of(self).add("app", "emails-flow")
+        Tags.of(self).add("stack", "emails-flow")
         Tags.of(self).add("env", "test")
 
         # ========================================

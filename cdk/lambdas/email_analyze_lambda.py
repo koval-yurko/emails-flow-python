@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_lambda_event_sources as lambda_event_sources,
     aws_logs as logs,
     Duration,
+    Tags,
 )
 from constructs import Construct
 
@@ -35,6 +36,7 @@ class EmailAnalyzeLambda(Construct):
             log_group_name=f"/aws/lambda/emails-flow-email-analyze",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
+        Tags.of(log_group).add("app", "email-analyze")
 
         self.email_analyze_role = iam.Role(
             self,
@@ -47,6 +49,7 @@ class EmailAnalyzeLambda(Construct):
                 )
             ],
         )
+        Tags.of(self.email_analyze_role).add("app", "email-analyze")
 
         self.function = _lambda.Function(
             self,
@@ -68,6 +71,7 @@ class EmailAnalyzeLambda(Construct):
             layers=[layer],
             log_group=log_group,
         )
+        Tags.of(self.function).add("app", "email-analyze")
 
         # Subscribe to queue
         self.function.add_event_source(

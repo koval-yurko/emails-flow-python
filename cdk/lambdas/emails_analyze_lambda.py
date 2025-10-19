@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_sqs as sqs,
     aws_logs as logs,
     Duration,
+    Tags,
 )
 from constructs import Construct
 
@@ -33,6 +34,7 @@ class EmailsAnalyzeLambda(Construct):
             log_group_name=f"/aws/lambda/emails-flow-emails-analyze",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
+        Tags.of(log_group).add("app", "emails-analyze")
 
         # Role for emails-analyze Lambda (PRODUCER)
         self.emails_analyze_role = iam.Role(
@@ -46,6 +48,7 @@ class EmailsAnalyzeLambda(Construct):
                 )
             ],
         )
+        Tags.of(self.emails_analyze_role).add("app", "emails-analyze")
 
         self.function = _lambda.Function(
             self,
@@ -66,6 +69,7 @@ class EmailsAnalyzeLambda(Construct):
             layers=[layer],
             log_group=log_group,
         )
+        Tags.of(self.function).add("app", "emails-analyze")
 
         # Grant permission to send messages to queue
         email_analyze_queue.grant_send_messages(self.emails_analyze_role)
