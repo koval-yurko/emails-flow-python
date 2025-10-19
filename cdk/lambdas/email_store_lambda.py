@@ -44,7 +44,10 @@ class EmailStoreLambda(Construct):
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
-                )
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSXRayDaemonWriteAccess"
+                ),
             ],
         )
         Tags.of(self.email_store_role).add("app", "email-store")
@@ -60,6 +63,7 @@ class EmailStoreLambda(Construct):
             timeout=Duration.seconds(20),
             memory_size=512,
             reserved_concurrent_executions=10,  # Rate limiting
+            tracing=_lambda.Tracing.ACTIVE,
             environment={
                 "IMAP_HOST": os.getenv("IMAP_HOST"),
                 "IMAP_PORT": os.getenv("IMAP_PORT"),

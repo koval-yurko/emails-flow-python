@@ -46,7 +46,10 @@ class EmailAnalyzeLambda(Construct):
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
-                )
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSXRayDaemonWriteAccess"
+                ),
             ],
         )
         Tags.of(self.email_analyze_role).add("app", "email-analyze")
@@ -62,6 +65,7 @@ class EmailAnalyzeLambda(Construct):
             timeout=Duration.seconds(180),
             memory_size=1024,
             reserved_concurrent_executions=3,  # Rate limiting
+            tracing=_lambda.Tracing.ACTIVE,
             environment={
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),

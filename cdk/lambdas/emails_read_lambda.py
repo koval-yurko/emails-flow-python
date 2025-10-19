@@ -44,7 +44,10 @@ class EmailsReadLambda(Construct):
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
-                )
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSXRayDaemonWriteAccess"
+                ),
             ],
         )
         Tags.of(self.emails_read_role).add("app", "emails-read")
@@ -60,6 +63,7 @@ class EmailsReadLambda(Construct):
             memory_size=256,
             timeout=Duration.seconds(20),
             reserved_concurrent_executions=5,  # Rate limiting
+            tracing=_lambda.Tracing.ACTIVE,
             environment={
                 "EMAIL_READ_QUEUE_URL": email_read_queue.queue_url,
                 "IMAP_HOST": os.getenv("IMAP_HOST"),

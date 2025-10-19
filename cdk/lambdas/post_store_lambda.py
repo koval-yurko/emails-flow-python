@@ -44,7 +44,10 @@ class PostStoreLambda(Construct):
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
-                )
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSXRayDaemonWriteAccess"
+                ),
             ],
         )
         Tags.of(self.post_store_role).add("app", "post-store")
@@ -60,6 +63,7 @@ class PostStoreLambda(Construct):
             timeout=Duration.seconds(60),
             memory_size=256,
             reserved_concurrent_executions=10,
+            tracing=_lambda.Tracing.ACTIVE,
             environment={
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
