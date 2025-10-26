@@ -48,6 +48,9 @@ class EmailStoreLambda(Construct):
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "AWSXRayDaemonWriteAccess"
                 ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "CloudWatchFullAccess"
+                ),
             ],
         )
         Tags.of(self.email_store_role).add("app", "email-store")

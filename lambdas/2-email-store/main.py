@@ -3,9 +3,9 @@ import json
 from dotenv import load_dotenv
 from shared.emails import EmailService, clean_html
 from shared.supabase import SupabaseClient
+from shared.metrics import email_store_success_inc, email_store_error_inc
 
 load_dotenv()
-
 
 def handler(event, context):
     print(f"Received {len(event['Records'])} messages from SQS")
@@ -38,12 +38,14 @@ def handler(event, context):
             supabase_client.add_email(message, clean_content)
 
             email_server.mark_massage_as_seen(message_id, folder)
-            # Push Success metrics
+
+            email_store_success_inc()
 
         except Exception as e:
             print(f"Error processing message {sqs_message_id}: {str(e)}")
             batch_item_failures.append({"itemIdentifier": sqs_message_id})
-            # Push Error metrics
+
+            email_store_error_inc(type(e).__name__)
 
     return {"batchItemFailures": batch_item_failures}
 
