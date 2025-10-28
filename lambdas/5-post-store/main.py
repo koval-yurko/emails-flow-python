@@ -3,6 +3,7 @@ import json
 from dotenv import load_dotenv
 from shared import PostMessage
 from shared.supabase import SupabaseClient
+from shared.metrics import post_store_error_inc, post_store_success_inc
 
 load_dotenv()
 
@@ -36,11 +37,13 @@ def handler(event, context):
 
             post_id = supabase_client.add_post(post)
             # Push Success metrics
+            post_store_success_inc()
 
         except Exception as e:
             print(f"Error processing message {sqs_message_id}: {str(e)}")
             batch_item_failures.append({"itemIdentifier": sqs_message_id})
             # Push Error metrics
+            post_store_error_inc(type(e).__name__)
 
     return {"batchItemFailures": batch_item_failures}
 

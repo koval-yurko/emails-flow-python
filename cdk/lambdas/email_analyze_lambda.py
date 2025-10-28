@@ -1,4 +1,6 @@
 import os
+from typing import Sequence
+
 from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
@@ -9,6 +11,7 @@ from aws_cdk import (
     Tags,
 )
 from constructs import Construct
+from .shared_env import envs
 
 
 class EmailAnalyzeLambda(Construct):
@@ -22,18 +25,20 @@ class EmailAnalyzeLambda(Construct):
         self,
         scope: Construct,
         construct_id: str,
-        layer: _lambda.LayerVersion,
+        layers: Sequence[_lambda.LayerVersion],
         email_analyze_queue: sqs.Queue,
         post_store_queue: sqs.Queue,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        function_name = "emails-flow-email-analyze"
+
         # Create CloudWatch Log Group with retention
         log_group = logs.LogGroup(
             self,
             "LogGroup",
-            log_group_name=f"/aws/lambda/emails-flow-email-analyze",
+            log_group_name=f"/aws/lambda/{function_name}",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
         Tags.of(log_group).add("app", "email-analyze")
@@ -50,6 +55,9 @@ class EmailAnalyzeLambda(Construct):
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "AWSXRayDaemonWriteAccess"
                 ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "CloudWatchFullAccess"
+                ),
             ],
         )
         Tags.of(self.email_analyze_role).add("app", "email-analyze")
@@ -57,7 +65,7 @@ class EmailAnalyzeLambda(Construct):
         self.function = _lambda.Function(
             self,
             "Function",
-            function_name="emails-flow-email-analyze",
+            function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/4-email-analyze"),
@@ -66,13 +74,14 @@ class EmailAnalyzeLambda(Construct):
             memory_size=1024,
             reserved_concurrent_executions=3,  # Rate limiting
             tracing=_lambda.Tracing.ACTIVE,
-            environment={
+            environment=envs | {
+                "OTEL_SERVICE_NAME": function_name,
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
                 "XAI_API_KEY": os.getenv("XAI_API_KEY"),
                 "POST_STORE_QUEUE_URL": post_store_queue.queue_url,
             },
-            layers=[layer],
+            layers=layers,
             log_group=log_group,
         )
         Tags.of(self.function).add("app", "email-analyze")

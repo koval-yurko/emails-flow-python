@@ -1,4 +1,6 @@
 import os
+from typing import Sequence
+
 from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
@@ -9,6 +11,7 @@ from aws_cdk import (
     Tags,
 )
 from constructs import Construct
+from .shared_env import envs
 
 
 class PostStoreLambda(Construct):
@@ -21,17 +24,19 @@ class PostStoreLambda(Construct):
         self,
         scope: Construct,
         construct_id: str,
-        layer: _lambda.LayerVersion,
+        layers: Sequence[_lambda.LayerVersion],
         post_store_queue: sqs.Queue,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        function_name = "emails-flow-post-store"
+
         # Create CloudWatch Log Group with retention
         log_group = logs.LogGroup(
             self,
             "LogGroup",
-            log_group_name=f"/aws/lambda/emails-flow-post-store",
+            log_group_name=f"/aws/lambda/{function_name}",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
         Tags.of(log_group).add("app", "post-store")
@@ -48,6 +53,9 @@ class PostStoreLambda(Construct):
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "AWSXRayDaemonWriteAccess"
                 ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "CloudWatchFullAccess"
+                ),
             ],
         )
         Tags.of(self.post_store_role).add("app", "post-store")
@@ -55,7 +63,7 @@ class PostStoreLambda(Construct):
         self.function = _lambda.Function(
             self,
             "Function",
-            function_name="emails-flow-post-store",
+            function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/5-post-store"),
@@ -64,11 +72,12 @@ class PostStoreLambda(Construct):
             memory_size=256,
             reserved_concurrent_executions=10,
             tracing=_lambda.Tracing.ACTIVE,
-            environment={
+            environment=envs | {
+                "OTEL_SERVICE_NAME": function_name,
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
-            layers=[layer],
+            layers=layers,
             log_group=log_group,
         )
         Tags.of(self.function).add("app", "post-store")

@@ -1,4 +1,6 @@
 import os
+from typing import Sequence
+
 from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
@@ -9,6 +11,7 @@ from aws_cdk import (
     Tags,
 )
 from constructs import Construct
+from .shared_env import envs
 
 
 class EmailStoreLambda(Construct):
@@ -21,11 +24,13 @@ class EmailStoreLambda(Construct):
         self,
         scope: Construct,
         construct_id: str,
-        layer: _lambda.LayerVersion,
+        layers: Sequence[_lambda.LayerVersion],
         email_read_queue: sqs.Queue,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        function_name = "emails-flow-email-store"
 
         # Create CloudWatch Log Group with retention
         log_group = logs.LogGroup(
@@ -58,7 +63,7 @@ class EmailStoreLambda(Construct):
         self.function = _lambda.Function(
             self,
             "Function",
-            function_name="emails-flow-email-store",
+            function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/2-email-store"),
@@ -67,7 +72,8 @@ class EmailStoreLambda(Construct):
             memory_size=512,
             reserved_concurrent_executions=10,  # Rate limiting
             tracing=_lambda.Tracing.ACTIVE,
-            environment={
+            environment=envs | {
+                "OTEL_SERVICE_NAME": function_name,
                 "IMAP_HOST": os.getenv("IMAP_HOST"),
                 "IMAP_PORT": os.getenv("IMAP_PORT"),
                 "IMAP_USER": os.getenv("IMAP_USER"),
@@ -75,7 +81,7 @@ class EmailStoreLambda(Construct):
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
-            layers=[layer],
+            layers=layers,
             log_group=log_group,
         )
         Tags.of(self.function).add("app", "email-store")

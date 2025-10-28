@@ -1,3 +1,4 @@
+import os
 from aws_cdk import (
     aws_lambda as _lambda,
     App,
@@ -50,13 +51,29 @@ class EmailsFlowStack(Stack):
         # 1. SHARED RESOURCES
         # ========================================
 
-        # Lambda Layer with shared code
-        shared_layer = _lambda.LayerVersion(
-            self,
-            "SharedLayer",
-            code=_lambda.Code.from_asset("../dist"),
-            compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
-            description="Shared code for emails-flow lambdas",
+        # Lambda Layers (OTEL must be first for proper instrumentation)
+        shared_layers = []
+
+        # Add OTEL layer first if available
+        otel_layer_arn = os.getenv("AWS_LAMBDA_OTEL_LAYER_ARN")
+        if otel_layer_arn:
+            shared_layers.append(
+                _lambda.LayerVersion.from_layer_version_arn(
+                    self,
+                    "OtelLayerShared",
+                    layer_version_arn=otel_layer_arn,
+                )
+            )
+
+        # Add shared application layer
+        shared_layers.append(
+            _lambda.LayerVersion(
+                self,
+                "SharedLayer",
+                code=_lambda.Code.from_asset("../dist"),
+                compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
+                description="Shared code for emails-flow lambdas",
+            )
         )
 
         # ========================================
@@ -92,7 +109,7 @@ class EmailsFlowStack(Stack):
         emails_read = EmailsReadLambda(
             self,
             "EmailsReadLambda",
-            layer=shared_layer,
+            layers=shared_layers,
             email_read_queue=email_read_queue.queue,
         )
 
@@ -100,7 +117,7 @@ class EmailsFlowStack(Stack):
         email_store = EmailStoreLambda(
             self,
             "EmailStoreLambda",
-            layer=shared_layer,
+            layers=shared_layers,
             email_read_queue=email_read_queue.queue,
         )
 
@@ -108,7 +125,7 @@ class EmailsFlowStack(Stack):
         emails_analyze = EmailsAnalyzeLambda(
             self,
             "EmailsAnalyzeLambda",
-            layer=shared_layer,
+            layers=shared_layers,
             email_analyze_queue=email_analyze_queue.queue,
         )
 
@@ -116,7 +133,7 @@ class EmailsFlowStack(Stack):
         email_analyze = EmailAnalyzeLambda(
             self,
             "EmailAnalyzeLambda",
-            layer=shared_layer,
+            layers=shared_layers,
             email_analyze_queue=email_analyze_queue.queue,
             post_store_queue=post_store_queue.queue,
         )
@@ -125,7 +142,7 @@ class EmailsFlowStack(Stack):
         post_store = PostStoreLambda(
             self,
             "PostStoreLambda",
-            layer=shared_layer,
+            layers=shared_layers,
             post_store_queue=post_store_queue.queue,
         )
 

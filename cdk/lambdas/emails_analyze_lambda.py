@@ -1,4 +1,6 @@
 import os
+from typing import Sequence
+
 from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
@@ -8,6 +10,7 @@ from aws_cdk import (
     Tags,
 )
 from constructs import Construct
+from .shared_env import envs
 
 
 class EmailsAnalyzeLambda(Construct):
@@ -21,17 +24,19 @@ class EmailsAnalyzeLambda(Construct):
         self,
         scope: Construct,
         construct_id: str,
-        layer: _lambda.LayerVersion,
+        layers: Sequence[_lambda.LayerVersion],
         email_analyze_queue: sqs.Queue,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        function_name = "emails-flow-emails-analyze"
+
         # Create CloudWatch Log Group with retention
         log_group = logs.LogGroup(
             self,
             "LogGroup",
-            log_group_name=f"/aws/lambda/emails-flow-emails-analyze",
+            log_group_name=f"/aws/lambda/{function_name}",
             retention=logs.RetentionDays.TWO_WEEKS,
         )
         Tags.of(log_group).add("app", "emails-analyze")
@@ -56,7 +61,7 @@ class EmailsAnalyzeLambda(Construct):
         self.function = _lambda.Function(
             self,
             "Function",
-            function_name="emails-flow-emails-analyze",
+            function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
             code=_lambda.Code.from_asset("../lambdas/3-emails-analyze"),
@@ -65,12 +70,13 @@ class EmailsAnalyzeLambda(Construct):
             memory_size=256,
             reserved_concurrent_executions=5,  # Rate limiting
             tracing=_lambda.Tracing.ACTIVE,
-            environment={
+            environment=envs | {
+                "OTEL_SERVICE_NAME": function_name,
                 "EMAIL_ANALYZE_QUEUE_URL": email_analyze_queue.queue_url,
                 "SUPABASE_URL": os.getenv("SUPABASE_URL"),
                 "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
             },
-            layers=[layer],
+            layers=layers,
             log_group=log_group,
         )
         Tags.of(self.function).add("app", "emails-analyze")
