@@ -1,11 +1,13 @@
 from supabase import create_client, Client
 from shared import EmailMessage, PostMessage
+from shared.tracing import trace_operation
 
 
 class SupabaseClient:
     def __init__(self, url, key):
         self.supabase: Client = create_client(url, key)
 
+    @trace_operation(namespace="supabase")
     def add_email(self, email: EmailMessage, clean_content: str):
         current = (
             self.supabase.from_("emails")
@@ -41,6 +43,7 @@ class SupabaseClient:
                 }
             ).execute()
 
+    @trace_operation(namespace="supabase")
     def get_unprocessed_emails(self, count):
         resp = (
             self.supabase.from_("emails")
@@ -53,21 +56,26 @@ class SupabaseClient:
         if resp.data is None:
             print("No emails found")
             return []
+
         return resp.data
 
+    @trace_operation(namespace="supabase")
     def get_email_by_id(self, row_id):
         resp = self.supabase.from_("emails").select("*").eq("id", row_id).execute()
 
         if resp.data is None:
             print("No email found")
             return None
+
         return resp.data[0]
 
+    @trace_operation(namespace="supabase")
     def mark_email_as_processed(self, row_id):
         self.supabase.from_("emails").update({"status": "processed"}).eq(
             "id", row_id
         ).execute()
 
+    @trace_operation(namespace="supabase")
     def add_post(self, post: PostMessage):
         domains_ids = [
             self.get_or_create_tag(domain, "domain") for domain in post.domains
@@ -120,6 +128,7 @@ class SupabaseClient:
         self.link_post_to_tags(post_id, tags_ids)
         self.link_post_to_tags(post_id, new_tags_ids)
 
+    @trace_operation(namespace="supabase")
     def get_or_create_tag(self, slug: str, type: str):
         current = (
             self.supabase.from_("tags")
@@ -147,6 +156,7 @@ class SupabaseClient:
             )
             return bbb.data[0]["id"]
 
+    @trace_operation(namespace="supabase")
     def link_post_to_tags(self, post_id, tags_ids):
         for tag_id in tags_ids:
             self.supabase.from_("posts_tags").insert(

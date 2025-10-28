@@ -1,8 +1,9 @@
 from imapclient import IMAPClient
 import email
 from email.policy import default
-from shared import EmailMessage
 
+from shared import EmailMessage
+from shared.tracing import trace_operation
 
 # https://imapclient.readthedocs.io/en/3.0.0/
 
@@ -19,6 +20,7 @@ class EmailService:
         self.__server = IMAPClient(imap_host, port=imap_port, use_uid=True)
         self.__server.login(imap_user, imap_password)
 
+    @trace_operation(namespace="emails")
     def fetch_unseen_mails(self, folder_name, from_filter=None):
         self.__server.select_folder(folder_name)
 
@@ -29,6 +31,7 @@ class EmailService:
 
         return messages_ids
 
+    @trace_operation(namespace="emails")
     def fetch_message(self, message_id, folder_name):
         self.__server.select_folder(folder_name)
 
@@ -58,10 +61,12 @@ class EmailService:
             body=html_content,
         )
 
+    @trace_operation(namespace="emails")
     def mark_massage_as_seen(self, message_id, folder_name):
         self.__server.select_folder(folder_name)
         self.__server.add_flags(message_id, [b"\\Seen"])
 
+    @trace_operation(namespace="emails")
     def mark_massage_as_unseen(self, message_id, folder_name):
         self.__server.select_folder(folder_name)
         self.__server.remove_flags(message_id, [b"\\Seen"])

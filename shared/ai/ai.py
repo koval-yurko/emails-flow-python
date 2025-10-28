@@ -9,6 +9,7 @@ from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableLambda
 from langchain_core.prompts import PromptTemplate
 
+from shared.tracing import trace_operation
 from .output import ResponseFormatter, PostItem
 from .prompt import PROMPT_EMAIL_PROCESS
 
@@ -76,6 +77,7 @@ class LLMEngine:
         except Exception as e:
             raise ValueError(f"Could not parse structured output: {e}")
 
+    @trace_operation(namespace="ai")
     def get_email_summary(self, email_content: str) -> list[PostItem]:
         self.__start_time = time.time()
 
