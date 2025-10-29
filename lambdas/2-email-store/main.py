@@ -24,7 +24,8 @@ def handler(event, context):
     batch_item_failures = []
 
     for record in event["Records"]:
-        sqs_message_id = record["messageId"]
+        sqs_message_id = record.get("messageId")
+        retry_count = record.get("attributes", {}).get("ApproximateReceiveCount", 1)
 
         try:
             body = json.loads(record["body"])
@@ -39,13 +40,13 @@ def handler(event, context):
 
             email_server.mark_massage_as_seen(message_id, folder)
 
-            email_store_success_inc()
+            email_store_success_inc(retry_count)
 
         except Exception as e:
             print(f"Error processing message {sqs_message_id}: {str(e)}")
             batch_item_failures.append({"itemIdentifier": sqs_message_id})
 
-            email_store_error_inc(type(e).__name__)
+            email_store_error_inc(type(e).__name__, retry_count)
 
     return {"batchItemFailures": batch_item_failures}
 
