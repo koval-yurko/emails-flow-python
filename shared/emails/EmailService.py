@@ -17,8 +17,13 @@ class EmailService:
         self.__imap_user = imap_user
         self.__imap_password = imap_password
 
-        self.__server = IMAPClient(imap_host, port=imap_port, use_uid=True)
-        self.__server.login(imap_user, imap_password)
+        self.__server = self.login()
+
+    @trace_operation(namespace="emails")
+    def login(self):
+        server = IMAPClient(self.__imap_host, port=self.__imap_port, use_uid=True)
+        server.login(self.__imap_user, self.__imap_password)
+        return server
 
     @trace_operation(namespace="emails")
     def fetch_unseen_mails(self, folder_name, from_filter=None):

@@ -1,0 +1,44 @@
+version: '3.8'
+
+name: emails-flow
+
+services:
+  localstack:
+    image: localstack/localstack:4.9.2
+    container_name: emails-flow-localstack
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services port range
+    environment:
+      - SERVICES=sqs,lambda
+      - DEBUG=1
+      - LAMBDA_EXECUTOR=docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./localstack-data}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./dev-setup:/etc/localstack/init/ready.d"
+    networks:
+      - emails-flow-network
+
+  # OpenTelemetry Collector for local trace/metric collection
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: emails-flow-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+    volumes:
+      - "./dev-setup/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
+    networks:
+      - emails-flow-network
+
+networks:
+  emails-flow-network:
+    driver: bridge

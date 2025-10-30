@@ -63,7 +63,7 @@ class EmailsReadLambda(Construct):
             function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_13,
             handler="main.handler",
-            code=_lambda.Code.from_asset("../lambdas/1-emails-read"),
+            code=_lambda.Code.from_asset("../lambdas/1-emails-read", exclude=[".env", ".env.*", "__pycache__"]),
             role=self.emails_read_role,
             memory_size=256,
             timeout=Duration.seconds(20),

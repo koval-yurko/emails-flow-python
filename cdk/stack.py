@@ -66,15 +66,14 @@ class EmailsFlowStack(Stack):
             )
 
         # Add shared application layer
-        shared_layers.append(
-            _lambda.LayerVersion(
-                self,
-                "SharedLayer",
-                code=_lambda.Code.from_asset("../dist"),
-                compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
-                description="Shared code for emails-flow lambdas",
-            )
+        deps_layer = _lambda.LayerVersion(
+            self,
+            "SharedLayer",
+            code=_lambda.Code.from_asset("../dist"),
+            compatible_runtimes=[_lambda.Runtime.PYTHON_3_13],
+            description="Shared code for emails-flow lambdas",
         )
+        shared_layers.append(deps_layer)
 
         # ========================================
         # 2. QUEUES

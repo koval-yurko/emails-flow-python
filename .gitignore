@@ -14,4 +14,7 @@ wheels/
 # CDK output
 cdk.out/
 
+# LocalStack
+localstack-data/
+
 docs/

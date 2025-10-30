@@ -2,10 +2,12 @@ import os
 from dotenv import load_dotenv
 from shared.emails import EmailService
 from shared.sqs import send_message
+from shared.tracing import  init_trace, lambda_handler_with_trace
 
 load_dotenv()
+init_trace()
 
-
+@lambda_handler_with_trace
 def handler(event, context):
     print(f"Received event: '{event}'")
 
@@ -30,6 +32,8 @@ def handler(event, context):
             },
         )
 
-
 if __name__ == "__main__":
-    handler({}, {})
+    class TestContext:
+        function_name = "emails-read"
+
+    handler({}, TestContext())
