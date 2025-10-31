@@ -22,6 +22,7 @@ from lambdas import (
     EmailsAnalyzeLambda,
     EmailAnalyzeLambda,
     PostStoreLambda,
+    TestLambda,
 )
 
 
@@ -104,6 +105,12 @@ class EmailsFlowStack(Stack):
         # 3. LAMBDAS
         # ========================================
 
+        test = TestLambda(
+            self,
+            "TestLambda",
+            layers=shared_layers,
+        )
+
         # PRODUCER: Fetch email IDs from IMAP → email_read_queue
         emails_read = EmailsReadLambda(
             self,
@@ -151,23 +158,30 @@ class EmailsFlowStack(Stack):
 
         CfnOutput(
             self,
+            "TestLambdaArn",
+            value=test.function.function_arn,
+            export_name="EmailsFlowTestLambdaArn",
+        )
+
+        CfnOutput(
+            self,
             "EmailsReadLambdaArn",
             value=emails_read.function.function_arn,
-            export_name="EmailsFlowMainLambdaArn",
+            export_name="EmailsFlowEmailsReadLambdaArn",
         )
 
         CfnOutput(
             self,
             "EmailStoreLambdaArn",
             value=email_store.function.function_arn,
-            export_name="EmailsFlowConsumerLambdaArn",
+            export_name="EmailsFlowEmailStoreLambdaArn",
         )
 
         CfnOutput(
             self,
             "EmailAnalyzeLambdaArn",
             value=email_analyze.function.function_arn,
-            export_name="EmailsFlowAnalyzeLambdaArn",
+            export_name="EmailsFlowEmailAnalyzeLambdaArn",
         )
 
         CfnOutput(

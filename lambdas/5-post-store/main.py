@@ -65,7 +65,7 @@ if __name__ == "__main__":
                             "tags": ["Tag 1", "Tag 2"],
                             "new_tags": ["New Tag 1", "New Tag 2"],
                         }
-                    )
+                    ),
                 },
                 {
                     "messageId": "test-sqs-msg-2",
@@ -80,7 +80,7 @@ if __name__ == "__main__":
                             "tags": ["Tag 2", "Tag 3"],
                             "new_tags": ["New Tag 2", "New Tag 3"],
                         }
-                    )
+                    ),
                 },
             ]
         },

@@ -7,6 +7,7 @@ from shared.metrics import email_store_success_inc, email_store_error_inc
 
 load_dotenv()
 
+
 def handler(event, context):
     print(f"Received {len(event['Records'])} messages from SQS")
 

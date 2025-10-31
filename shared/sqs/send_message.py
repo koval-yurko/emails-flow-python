@@ -8,11 +8,7 @@ region = os.getenv("AWS_REGION", "eu-central-1")
 
 if endpoint_url is not None:
     print(f"Using LocalStack endpoint: {endpoint_url}")
-    sqs = boto3.client(
-        "sqs",
-        endpoint_url=endpoint_url,
-        region_name=region
-    )
+    sqs = boto3.client("sqs", endpoint_url=endpoint_url, region_name=region)
 else:
     sqs = boto3.client("sqs")
 

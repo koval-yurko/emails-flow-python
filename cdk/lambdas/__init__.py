@@ -3,6 +3,7 @@ from .email_store_lambda import EmailStoreLambda
 from .emails_analyze_lambda import EmailsAnalyzeLambda
 from .email_analyze_lambda import EmailAnalyzeLambda
 from .post_store_lambda import PostStoreLambda
+from .test_lambda import TestLambda
 
 __all__ = [
     "EmailsReadLambda",
@@ -10,4 +11,5 @@ __all__ = [
     "EmailsAnalyzeLambda",
     "EmailAnalyzeLambda",
     "PostStoreLambda",
+    "TestLambda",
 ]

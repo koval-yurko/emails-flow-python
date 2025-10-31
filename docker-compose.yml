@@ -24,21 +24,6 @@ services:
     networks:
       - emails-flow-network
 
-  # OpenTelemetry Collector for local trace/metric collection
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
-    container_name: emails-flow-otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Prometheus metrics exposed by the collector
-      - "8889:8889"   # Prometheus exporter metrics
-    volumes:
-      - "./dev-setup/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
-    networks:
-      - emails-flow-network
-
 networks:
   emails-flow-network:
     driver: bridge

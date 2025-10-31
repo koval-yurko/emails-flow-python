@@ -40,14 +40,6 @@ localstack-stats:
 		--endpoint-url http://localhost:4566 \
 		--region eu-central-1
 
-otel-logs:
-	@echo "Streaming OpenTelemetry Collector logs (traces & metrics)..."
-	docker logs emails-flow-otel-collector -f
-
-otel-metrics:
-	@echo "Fetching Prometheus metrics from OTEL Collector..."
-	@curl -s http://localhost:8889/metrics | grep emails_flow || echo "No metrics found yet"
-
 clean:
 	rm -rf dist
 
@@ -56,4 +48,4 @@ clean-localstack:
 	@rm -rf localstack-data
 	docker-compose down -v
 
-.PHONY: format build_layer cdk_deploy cdk_destroy localstack-up localstack-down localstack-logs otel-logs otel-metrics localstack-test localstack-test-lambda localstack-test-lambda-sqs localstack-stats clean clean-localstack
+.PHONY: format build_layer cdk_deploy cdk_destroy localstack-up localstack-down localstack-logs localstack-stats clean clean-localstack
