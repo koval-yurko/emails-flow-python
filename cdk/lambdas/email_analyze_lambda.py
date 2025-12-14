@@ -86,11 +86,12 @@ class EmailAnalyzeLambda(Construct):
         )
         Tags.of(self.function).add("app", "email-analyze")
 
-        # Subscribe to queue
+        # Subscribe to queue with max concurrency aligned to reserved concurrency
         self.function.add_event_source(
             lambda_event_sources.SqsEventSource(
                 email_analyze_queue,
                 batch_size=1,
+                max_concurrency=3,  # Align with reserved_concurrent_executions to prevent throttling
                 report_batch_item_failures=True,
             )
         )

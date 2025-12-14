@@ -87,6 +87,7 @@ class PostStoreLambda(Construct):
             lambda_event_sources.SqsEventSource(
                 post_store_queue,
                 batch_size=10,
+                max_concurrency=10,
                 max_batching_window=Duration.seconds(5),
                 report_batch_item_failures=True,
             )

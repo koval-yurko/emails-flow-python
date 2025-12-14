@@ -24,6 +24,7 @@ from lambdas import (
     PostStoreLambda,
     TestLambda,
 )
+from api_gateway import EmailsFlowApiGateway
 
 
 class EmailsFlowStack(Stack):
@@ -153,7 +154,18 @@ class EmailsFlowStack(Stack):
         )
 
         # ========================================
-        # 4. OUTPUTS
+        # 4. API GATEWAY
+        # ========================================
+
+        api_gateway = EmailsFlowApiGateway(
+            self,
+            "ApiGateway",
+            emails_read_function=emails_read.function,
+            emails_analyze_function=emails_analyze.function,
+        )
+
+        # ========================================
+        # 5. OUTPUTS
         # ========================================
 
         CfnOutput(
@@ -217,4 +229,21 @@ class EmailsFlowStack(Stack):
             "PostStoreQueueUrl",
             value=post_store_queue.queue.queue_url,
             export_name="PostStoreQueueUrl",
+        )
+
+        # CloudFormation Outputs
+        CfnOutput(
+            self,
+            "ApiGatewayUrl",
+            value=api_gateway.api.url,
+            description="API Gateway endpoint URL",
+            export_name="EmailsFlowApiGatewayUrl",
+        )
+
+        CfnOutput(
+            self,
+            "ApiKeyId",
+            value=api_gateway.api_key.key_id,
+            description="API Key ID (use for x-api-key header)",
+            export_name="EmailsFlowApiKeyId",
         )
